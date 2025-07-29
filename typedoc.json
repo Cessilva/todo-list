@@ -1,0 +1,12 @@
+{
+	"$schema": "https://raw.githubusercontent.com/TypeStrong/typedoc/master/typedoc.schema.json",
+	"entryPoints": ["src/app"], 
+	"entryPointStrategy": "expand",
+	"out": "docs", 
+	"exclude": ["**/*.spec.ts", "**/node_modules/**"], 
+	"theme": "default", 
+	"includeVersion": true, 
+	"tsconfig": "tsconfig.json" ,
+	"readme": "./README.md",
+	"hideGenerator": true 
+  }
