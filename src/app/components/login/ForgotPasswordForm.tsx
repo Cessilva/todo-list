@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { useAuth } from '../context/AuthContext';
-import Button from './Button';
+import { useAuth } from '../../context/AuthContext';
+import Button from '../Button';
 
 interface ForgotPasswordFormProps {
   onSwitchToLogin: () => void;

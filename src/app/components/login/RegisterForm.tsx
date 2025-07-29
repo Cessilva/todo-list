@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { useAuth } from '../context/AuthContext';
-import { RegisterCredentials } from '../types/auth';
-import Button from './Button';
+import { useAuth } from '../../context/AuthContext';
+import { RegisterCredentials } from '../../types/auth';
+import Button from '../Button';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;

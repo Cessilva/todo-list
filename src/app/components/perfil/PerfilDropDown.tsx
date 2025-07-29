@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { PerfilView } from './PerfilView';
 
 export const ProfileDropdown = () => {
@@ -32,7 +32,7 @@ export const ProfileDropdown = () => {
     setIsOpen(false);
     // Logout and redirect
     await logout();
-    router.push('/auth');
+    router.push('/pages/auth');
   };
 
   // Si no hay usuario autenticado, no mostrar el dropdown
@@ -47,12 +47,14 @@ export const ProfileDropdown = () => {
       {/* Botón de hamburguesa para móvil */}
       <button
         id="mobile-open-button"
-        className="text-2xl sm:hidden flex items-center h-full gap-2 focus:outline-none cursor-pointer rounded-md p-4 hover:border-neutral-400 hover:border transition-all duration-200"
+        className="text-2xl sm:hidden flex items-center h-full gap-2 focus:outline-none cursor-pointer rounded-md p-3 sm:p-4 hover:border-neutral-400 hover:border transition-all duration-200"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <span className="material-icons text-lg text-primary-50">menu</span>
+        <span className="material-icons text-lg sm:text-xl text-primary-50">
+          menu
+        </span>
       </button>
       {/* Div de perfil para desktop */}
       <div
@@ -89,11 +91,13 @@ export const ProfileDropdown = () => {
 
             <button
               onClick={handleLogout}
-              className="flex items-center w-full text-left pl-6 sm:px-8 py-3 text-sm sm:text-base text-primary-50 hover:translate-x-2 transition-all duration-300"
+              className="flex items-center w-full text-left pl-4 sm:pl-6 md:px-8 py-3 text-sm sm:text-base text-primary-50 hover:translate-x-2 transition-all duration-300"
               role="menuitem"
             >
-              <span className="material-icons text-lg">exit_to_app</span>
-              <span className="ml-3">Cerrar Sesión</span>
+              <span className="material-icons text-base sm:text-lg">
+                exit_to_app
+              </span>
+              <span className="ml-2 sm:ml-3">Cerrar Sesión</span>
             </button>
           </div>
         </div>

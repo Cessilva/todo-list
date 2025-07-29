@@ -6,8 +6,8 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
 import { LoginCredentials } from '../../types/auth';
 import Image from 'next/image';
-import { RegisterForm } from '../../components/RegisterForm';
-import { ForgotPasswordForm } from '../../components/ForgotPasswordForm';
+import { RegisterForm } from '../../components/login/RegisterForm';
+import { ForgotPasswordForm } from '../../components/login/ForgotPasswordForm';
 import Button from '../../components/Button';
 
 type AuthView = 'login' | 'register' | 'forgot-password';
@@ -26,7 +26,7 @@ export default function Auth() {
   const onSubmit = async (data: LoginCredentials) => {
     const success = await login(data);
     if (success) {
-      router.push('/dashboard');
+      router.push('/pages/dashboard');
     }
   };
 

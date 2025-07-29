@@ -54,11 +54,11 @@ const Button: React.FC<ButtonProps> = ({
   };
 
   const sizeStyles: Record<ButtonSize, string> = {
-    xs: 'px-2 py-1 text-xs',
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-5 py-2.5 text-lg',
-    xl: 'px-6 py-3 text-xl',
+    xs: 'px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm',
+    sm: 'px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base',
+    md: 'px-4 sm:px-5 py-2 sm:py-2.5 text-base sm:text-lg',
+    lg: 'px-5 sm:px-6 py-2.5 sm:py-3 text-lg sm:text-xl',
+    xl: 'px-6 sm:px-8 py-3 sm:py-4 text-xl sm:text-2xl',
   };
 
   const widthStyles = fullWidth ? 'w-full' : '';

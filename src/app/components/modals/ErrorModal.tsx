@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { ErrorState } from '../types/global';
-import Button from './Button';
+import Button from '../Button';
 
 interface ErrorModalProps {
   error: ErrorState;
@@ -76,12 +76,36 @@ export const ErrorModal: React.FC<ErrorModalProps> = ({ error, onClose }) => {
             <p className="text-sm text-gray-500">{error.message}</p>
           </div>
           <div className="items-center px-4 py-3">
-            <Button
-              onClick={onClose}
-              className={`px-4 py-2 ${colors.button} text-white text-base font-medium rounded-md w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-colors duration-200`}
-            >
-              Entendido
-            </Button>
+            {error.onConfirm ? (
+              <div className="flex gap-3">
+                <Button
+                  onClick={onClose}
+                  variant="secondary"
+                  outlined
+                  className="flex-1"
+                >
+                  {error.cancelText || 'Cancelar'}
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (error.onConfirm) {
+                      await error.onConfirm();
+                    }
+                    onClose();
+                  }}
+                  className={`flex-1 px-4 py-2 ${colors.button} text-white text-base font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-colors duration-200`}
+                >
+                  {error.confirmText || 'Confirmar'}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={onClose}
+                className={`px-4 py-2 ${colors.button} text-white text-base font-medium rounded-md w-full shadow-sm focus:outline-none focus:ring-2 focus:ring-opacity-50 transition-colors duration-200`}
+              >
+                Entendido
+              </Button>
+            )}
           </div>
         </div>
       </div>
