@@ -35,7 +35,7 @@ export const PerfilView = ({
         height={64}
       />
       <div className="text-center">
-        <h2 className="text-xl  font-semibold tracking-tight text-primary-50 uppercase">
+        <h2 className="text-xl font-semibold tracking-tight text-primary-50">
           {perfilName}
         </h2>
         <p className="text-sm font-bold text-secondary-200 uppercase">

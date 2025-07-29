@@ -1,5 +1,4 @@
-import { ProfileDropdown } from '../../components/perfilDropDown';
-import Link from 'next/link';
+import { ProfileDropdown } from '../../components/PerfilDropDown';
 
 export default function Dashboard() {
   return (

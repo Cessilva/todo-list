@@ -93,3 +93,10 @@ docs: update README instructions
 ## License
 
 This project is open source and available under the [MIT License](LICENSE).
+
+## Available users and passwords
+- admin@todolist.com (Administrador)
+- user@todolist.com (Usuario)
+         
+Password for both: password123
+      

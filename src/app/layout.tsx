@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
 import './globals.css';
+import { GlobalProvider } from './context/GlobalContext';
+import { AuthProvider } from './context/AuthContext';
+import { GlobalUIManager } from './components/GlobalUIManager';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -30,7 +33,12 @@ export default function RootLayout({
         />
       </head>
       <body className={`${poppins.variable} font-poppins antialiased`}>
-        {children}
+        <GlobalProvider>
+          <AuthProvider>
+            {children}
+            <GlobalUIManager />
+          </AuthProvider>
+        </GlobalProvider>
       </body>
     </html>
   );
