@@ -136,7 +136,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
       {/* Acciones */}
       <div
-        className={`grid mt-3 gap-2 grid-cols-${level === 0 ? '2' : '1'} lg:flex lg:justify-${level === 0 ? 'start' : ''}`}
+        className={`grid mt-3 gap-2 grid-cols-${level === 0 ? '2' : '1'} md:flex md:justify-${level === 0 ? 'start' : ''}`}
       >
         {/* Editar - disponible para tareas y subtareas */}
         <Button
