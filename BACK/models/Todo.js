@@ -55,6 +55,11 @@ const todoSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  parentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Todo',
+    default: null
+  },
   completedAt: {
     type: Date,
     default: null

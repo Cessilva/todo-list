@@ -57,20 +57,17 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           {/* Checkbox */}
           <button
             onClick={handleStatusToggle}
-            disabled={task.status === 'pending' && !canComplete}
             className={`mt-1 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
               task.status === 'completed'
                 ? 'bg-green-500 border-green-500'
-                : canComplete
-                  ? 'border-gray-400 hover:border-green-400'
-                  : 'border-gray-300 cursor-not-allowed opacity-50'
+                : 'border-gray-400 hover:border-green-400'
             }`}
             title={
-              task.status === 'pending' && !canComplete
-                ? 'No se puede completar: tiene subtareas pendientes'
-                : task.status === 'completed'
-                  ? 'Marcar como pendiente'
-                  : 'Marcar como completada'
+              task.status === 'completed'
+                ? 'Marcar como pendiente'
+                : canComplete
+                  ? 'Marcar como completada'
+                  : 'No se puede completar: tiene subtareas pendientes'
             }
           >
             {task.status === 'completed' && (

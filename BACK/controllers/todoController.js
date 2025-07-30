@@ -16,7 +16,7 @@ const createTodo = async (req, res, next) => {
       });
     }
 
-    const { title, description, priority, dueDate } = req.body;
+    const { title, description, priority, dueDate, parentId } = req.body;
 
     // Crear nuevo TODO
     const todo = new Todo({
@@ -24,6 +24,7 @@ const createTodo = async (req, res, next) => {
       description,
       priority: priority || 'medium',
       dueDate,
+      parentId: parentId || null,
       user: req.user.id
     });
 
@@ -46,34 +47,63 @@ const getTodos = async (req, res, next) => {
   try {
     const { status, priority, page = 1, limit = 10 } = req.query;
 
-    // Construir filtros
+    // Construir filtros base
     const filters = { user: req.user.id };
     
     if (status) {
-      filters.status = status;
+      // Convertir status string a completed boolean para el filtro
+      filters.completed = status === 'completed';
     }
     
     if (priority) {
       filters.priority = priority;
     }
 
-    // Calcular paginación
+    // Obtener TODOS los TODOs del usuario (sin paginación para construir jerarquía)
+    const allTodos = await Todo.find({ user: req.user.id })
+      .sort({ createdAt: -1 });
+
+    // Separar tareas principales y subtareas
+    const mainTasks = allTodos.filter(todo => !todo.parentId);
+    const subtasks = allTodos.filter(todo => todo.parentId);
+
+    // Construir jerarquía: agregar subtareas a sus tareas padre
+    const todosWithSubtasks = mainTasks.map(mainTask => {
+      const taskSubtasks = subtasks.filter(subtask => 
+        subtask.parentId && subtask.parentId.toString() === mainTask._id.toString()
+      );
+      
+      return {
+        ...mainTask.toObject(),
+        subtasks: taskSubtasks
+      };
+    });
+
+    // Aplicar filtros a las tareas con jerarquía
+    let filteredTodos = todosWithSubtasks;
+    
+    if (status) {
+      filteredTodos = filteredTodos.filter(todo => 
+        todo.completed === (status === 'completed')
+      );
+    }
+    
+    if (priority) {
+      filteredTodos = filteredTodos.filter(todo => todo.priority === priority);
+    }
+
+    // Aplicar paginación a las tareas filtradas
     const skip = (page - 1) * limit;
+    const paginatedTodos = filteredTodos.slice(skip, skip + parseInt(limit));
 
-    // Obtener TODOs con paginación
-    const todos = await Todo.find(filters)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit));
-
-    // Contar total de documentos
-    const total = await Todo.countDocuments(filters);
+    // Contar total de tareas principales (para paginación)
+    const total = filteredTodos.length;
 
     res.status(200).json({
       success: true,
       message: 'TODOs obtenidos exitosamente',
       data: {
-        todos,
+        todos: paginatedTodos,
         pagination: {
           currentPage: parseInt(page),
           totalPages: Math.ceil(total / limit),
@@ -115,17 +145,49 @@ const updateTodo = async (req, res, next) => {
       });
     }
 
+    // Validaciones especiales para cambios de estado
+    if (status !== undefined) {
+      const newCompleted = status === 'completed';
+      
+      // Si es una subtarea y se intenta desmarcar
+      if (todo.parentId && !newCompleted && todo.completed) {
+        // Verificar si la tarea padre está completada
+        const parentTask = await Todo.findOne({ _id: todo.parentId, user: req.user.id });
+        if (parentTask && parentTask.completed) {
+          return res.status(400).json({
+            success: false,
+            message: 'No puedes desmarcar una subtarea mientras la tarea principal esté completada. Primero desmarca la tarea principal.'
+          });
+        }
+      }
+      
+      // Si es una tarea principal y se intenta marcar como completada
+      if (!todo.parentId && newCompleted && !todo.completed) {
+        // Verificar que todas las subtareas estén completadas
+        const pendingSubtasks = await Todo.find({ 
+          parentId: id, 
+          user: req.user.id, 
+          completed: false 
+        });
+        
+        if (pendingSubtasks.length > 0) {
+          return res.status(400).json({
+            success: false,
+            message: `No puedes completar esta tarea. Tiene ${pendingSubtasks.length} subtarea${pendingSubtasks.length > 1 ? 's' : ''} pendiente${pendingSubtasks.length > 1 ? 's' : ''}. Completa todas las subtareas primero.`
+          });
+        }
+      }
+    }
+
     // Actualizar campos
     if (title !== undefined) todo.title = title;
     if (description !== undefined) todo.description = description;
-    if (status !== undefined) todo.status = status;
+    if (status !== undefined) {
+      // Convertir status string a completed boolean
+      todo.completed = status === 'completed';
+    }
     if (priority !== undefined) todo.priority = priority;
     if (dueDate !== undefined) todo.dueDate = dueDate;
-
-    // Si se marca como completado, agregar fecha de completado
-    if (status === 'completed' && todo.status !== 'completed') {
-      todo.completedAt = new Date();
-    }
 
     await todo.save();
 
@@ -146,8 +208,8 @@ const deleteTodo = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    // Buscar y eliminar TODO
-    const todo = await Todo.findOneAndDelete({ _id: id, user: req.user.id });
+    // Buscar TODO
+    const todo = await Todo.findOne({ _id: id, user: req.user.id });
     
     if (!todo) {
       return res.status(404).json({
@@ -155,6 +217,14 @@ const deleteTodo = async (req, res, next) => {
         message: 'TODO no encontrado'
       });
     }
+
+    // Si es una tarea principal, eliminar también todas sus subtareas
+    if (!todo.parentId) {
+      await Todo.deleteMany({ parentId: id, user: req.user.id });
+    }
+
+    // Eliminar la tarea principal o subtarea
+    await Todo.findOneAndDelete({ _id: id, user: req.user.id });
 
     res.status(200).json({
       success: true,

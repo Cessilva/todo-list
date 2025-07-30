@@ -132,9 +132,14 @@ export const TodoProvider: React.FC<{ children: ReactNode }> = ({
   const { setLoading, setError, setSuccess } = useGlobal();
   const { state: authState } = useAuth();
 
-  // Inicializar tareas al cargar el componente
+  // Inicializar tareas al cargar el componente solo si el usuario está autenticado
   useEffect(() => {
     const initializeTasks = async () => {
+      // Solo cargar tareas si el usuario está autenticado
+      if (!authState.isAuthenticated || !authState.user) {
+        return;
+      }
+
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
 
@@ -155,7 +160,7 @@ export const TodoProvider: React.FC<{ children: ReactNode }> = ({
     };
 
     initializeTasks();
-  }, []);
+  }, [authState.isAuthenticated, authState.user]);
 
   // Aplicar filtros cuando cambien las tareas o el filtro
   useEffect(() => {
@@ -311,6 +316,41 @@ export const TodoProvider: React.FC<{ children: ReactNode }> = ({
     status: TaskStatus
   ): Promise<void> => {
     try {
+      const task = getTaskById(id);
+
+      // Validaciones del lado del cliente
+      if (status === 'completed') {
+        // Solo aplicar restricción a tareas principales (no subtareas) que tienen subtareas pendientes
+        if (task && !task.parentId && task.subtasks.length > 0) {
+          const pendingSubtasks = task.subtasks.filter(
+            (subtask) => subtask.status === 'pending'
+          );
+
+          if (pendingSubtasks.length > 0) {
+            setError({
+              type: 'warning',
+              title: 'No se puede completar la tarea',
+              message: `Esta tarea tiene ${pendingSubtasks.length} subtarea${pendingSubtasks.length > 1 ? 's' : ''} pendiente${pendingSubtasks.length > 1 ? 's' : ''}. Debes completar todas las subtareas antes de marcar la tarea principal como completada.`,
+            });
+            return;
+          }
+        }
+      } else if (status === 'pending') {
+        // Si se intenta desmarcar una subtarea, verificar si la tarea padre está completada
+        if (task && task.parentId) {
+          const parentTask = getTaskById(task.parentId);
+          if (parentTask && parentTask.status === 'completed') {
+            setError({
+              type: 'warning',
+              title: 'No se puede desmarcar la subtarea',
+              message:
+                'No puedes desmarcar una subtarea mientras la tarea principal esté completada. Primero desmarca la tarea principal.',
+            });
+            return;
+          }
+        }
+      }
+
       setLoading(true);
       const response = await todoService.changeTaskStatus(id, status);
 
@@ -492,7 +532,19 @@ export const TodoProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const canCompleteTask = (taskId: string): boolean => {
-    return todoService.canCompleteTask(taskId);
+    const task = getTaskById(taskId);
+    if (!task) return false;
+
+    // Si es una subtarea, siempre puede completarse
+    if (task.parentId) return true;
+
+    // Para tareas principales, verificar que todas las subtareas estén completadas
+    if (task.subtasks.length > 0) {
+      return task.subtasks.every((subtask) => subtask.status === 'completed');
+    }
+
+    // Si no tiene subtareas, puede completarse
+    return true;
   };
 
   const contextValue: TaskContextType = {

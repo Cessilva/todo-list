@@ -49,7 +49,12 @@ const createTodoValidation = [
         throw new Error('Cada tag debe ser una cadena de máximo 30 caracteres');
       }
       return true;
-    })
+    }),
+
+  body('parentId')
+    .optional()
+    .isMongoId()
+    .withMessage('El parentId debe ser un ID de MongoDB válido')
 ];
 
 // Validaciones para actualizar todo

@@ -12,70 +12,9 @@ const API_BASE_URL =
 
 // Servicio de TODOs que se conecta con la API del backend
 class TodoService {
-  private readonly SUBTASKS_KEY = 'todo_app_subtasks';
-
   // Obtener token de acceso
   private getAccessToken(): string | null {
     return localStorage.getItem('todo_app_access_token');
-  }
-
-  // Gestión de subtareas en localStorage
-  private getSubtasksFromStorage(): { [parentId: string]: Task[] } {
-    try {
-      const stored = localStorage.getItem(this.SUBTASKS_KEY);
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
-    }
-  }
-
-  private saveSubtasksToStorage(subtasks: {
-    [parentId: string]: Task[];
-  }): void {
-    try {
-      localStorage.setItem(this.SUBTASKS_KEY, JSON.stringify(subtasks));
-    } catch (error) {
-      console.error('Error saving subtasks to localStorage:', error);
-    }
-  }
-
-  private addSubtaskToStorage(parentId: string, subtask: Task): void {
-    const subtasks = this.getSubtasksFromStorage();
-    if (!subtasks[parentId]) {
-      subtasks[parentId] = [];
-    }
-    subtasks[parentId].push(subtask);
-    this.saveSubtasksToStorage(subtasks);
-  }
-
-  private updateSubtaskInStorage(taskId: string, updates: Partial<Task>): void {
-    const subtasks = this.getSubtasksFromStorage();
-    for (const parentId in subtasks) {
-      const subtaskIndex = subtasks[parentId].findIndex(
-        (task) => task.id === taskId
-      );
-      if (subtaskIndex !== -1) {
-        subtasks[parentId][subtaskIndex] = {
-          ...subtasks[parentId][subtaskIndex],
-          ...updates,
-        };
-        this.saveSubtasksToStorage(subtasks);
-        break;
-      }
-    }
-  }
-
-  private removeSubtaskFromStorage(taskId: string): void {
-    const subtasks = this.getSubtasksFromStorage();
-    for (const parentId in subtasks) {
-      subtasks[parentId] = subtasks[parentId].filter(
-        (task) => task.id !== taskId
-      );
-      if (subtasks[parentId].length === 0) {
-        delete subtasks[parentId];
-      }
-    }
-    this.saveSubtasksToStorage(subtasks);
   }
 
   // Realizar petición HTTP con manejo de errores
@@ -86,10 +25,14 @@ class TodoService {
     try {
       const token = this.getAccessToken();
 
+      if (!token) {
+        throw new Error('No token, autorización denegada');
+      }
+
       const response = await fetch(`${API_BASE_URL}${url}`, {
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { Authorization: `Bearer ${token}` }),
+          Authorization: `Bearer ${token}`,
           ...options.headers,
         },
         ...options,
@@ -134,8 +77,12 @@ class TodoService {
       title: todo.title,
       description: todo.description || '',
       status: todo.completed ? 'completed' : 'pending',
-      parentId: null, // El backend no maneja jerarquías por ahora
-      subtasks: [], // El backend no maneja subtareas por ahora
+      parentId: todo.parentId || null,
+      subtasks: todo.subtasks
+        ? todo.subtasks.map((subtask: any) =>
+            this.convertBackendTodoToTask(subtask)
+          )
+        : [],
       comments:
         todo.comments?.map((comment: any) => ({
           id: comment._id || comment.id,
@@ -162,26 +109,10 @@ class TodoService {
           this.convertBackendTodoToTask(todo)
         );
 
-        // Agregar subtareas desde localStorage
-        const subtasksFromStorage = this.getSubtasksFromStorage();
-        const allTasks = [...tasks];
-
-        // Asignar subtareas a las tareas principales
-        tasks.forEach((task: Task) => {
-          if (subtasksFromStorage[task.id]) {
-            task.subtasks = subtasksFromStorage[task.id];
-          }
-        });
-
-        // Agregar todas las subtareas a la lista general
-        Object.values(subtasksFromStorage).forEach((subtaskArray) => {
-          allTasks.push(...subtaskArray);
-        });
-
         return {
           success: true,
           message: 'Tareas obtenidas exitosamente',
-          tasks: allTasks,
+          tasks: tasks,
         };
       }
 
@@ -200,35 +131,11 @@ class TodoService {
   // Crear nueva tarea
   async createTask(data: CreateTaskData): Promise<TaskResponse> {
     try {
-      // Si es una subtarea, crearla solo en localStorage
-      if (data.parentId) {
-        const subtask: Task = {
-          id: `subtask_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          title: data.title,
-          description: data.description,
-          status: 'pending',
-          parentId: data.parentId,
-          subtasks: [],
-          comments: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          order: Date.now(),
-        };
-
-        this.addSubtaskToStorage(data.parentId, subtask);
-
-        return {
-          success: true,
-          message: 'Subtarea creada exitosamente',
-          task: subtask,
-        };
-      }
-
-      // Si es una tarea principal, crearla en el backend
       const todoData = {
         title: data.title,
         description: data.description,
         priority: 'medium', // Valor por defecto
+        parentId: data.parentId || null,
       };
 
       const response = await this.makeRequest('/todos', {
@@ -241,7 +148,9 @@ class TodoService {
 
         return {
           success: true,
-          message: 'Tarea creada exitosamente',
+          message: data.parentId
+            ? 'Subtarea creada exitosamente'
+            : 'Tarea creada exitosamente',
           task,
         };
       }
@@ -261,40 +170,6 @@ class TodoService {
   // Actualizar tarea
   async updateTask(id: string, data: UpdateTaskData): Promise<TaskResponse> {
     try {
-      // Verificar si es una subtarea (ID empieza con 'subtask_')
-      if (id.startsWith('subtask_')) {
-        // Actualizar subtarea en localStorage
-        const updates: Partial<Task> = {};
-        if (data.title !== undefined) updates.title = data.title;
-        if (data.description !== undefined)
-          updates.description = data.description;
-        if (data.status !== undefined) updates.status = data.status;
-        updates.updatedAt = new Date().toISOString();
-
-        this.updateSubtaskInStorage(id, updates);
-
-        // Crear una tarea dummy para retornar
-        const updatedTask: Task = {
-          id,
-          title: data.title || '',
-          description: data.description || '',
-          status: data.status || 'pending',
-          parentId: null,
-          subtasks: [],
-          comments: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          order: Date.now(),
-        };
-
-        return {
-          success: true,
-          message: 'Subtarea actualizada exitosamente',
-          task: updatedTask,
-        };
-      }
-
-      // Si es una tarea principal, actualizarla en el backend
       const updateData: any = {};
 
       if (data.title !== undefined) updateData.title = data.title;
@@ -343,30 +218,11 @@ class TodoService {
   // Eliminar tarea
   async deleteTask(id: string): Promise<TaskResponse> {
     try {
-      // Verificar si es una subtarea (ID empieza con 'subtask_')
-      if (id.startsWith('subtask_')) {
-        // Eliminar subtarea de localStorage
-        this.removeSubtaskFromStorage(id);
-
-        return {
-          success: true,
-          message: 'Subtarea eliminada exitosamente',
-        };
-      }
-
-      // Si es una tarea principal, eliminarla del backend
       const response = await this.makeRequest(`/todos/${id}`, {
         method: 'DELETE',
       });
 
       if (response.success) {
-        // También eliminar todas las subtareas asociadas
-        const subtasks = this.getSubtasksFromStorage();
-        if (subtasks[id]) {
-          delete subtasks[id];
-          this.saveSubtasksToStorage(subtasks);
-        }
-
         return {
           success: true,
           message: 'Tarea eliminada exitosamente',
@@ -491,9 +347,34 @@ class TodoService {
     }
   }
 
-  // Verificar si una tarea puede completarse (simplificado para API)
-  canCompleteTask(taskId: string): boolean {
-    return true; // Por ahora siempre permitir completar
+  // Verificar si una tarea puede completarse
+  canCompleteTask(taskId: string, tasks: Task[]): boolean {
+    const findTask = (taskList: Task[]): Task | null => {
+      for (const task of taskList) {
+        if (task.id === taskId) {
+          return task;
+        }
+        const found = findTask(task.subtasks);
+        if (found) {
+          return found;
+        }
+      }
+      return null;
+    };
+
+    const task = findTask(tasks);
+    if (!task) return false;
+
+    // Si es una subtarea, siempre puede completarse
+    if (task.parentId) return true;
+
+    // Para tareas principales, verificar que todas las subtareas estén completadas
+    if (task.subtasks.length > 0) {
+      return task.subtasks.every((subtask) => subtask.status === 'completed');
+    }
+
+    // Si no tiene subtareas, puede completarse
+    return true;
   }
 
   // Inicializar con tareas de ejemplo (ya no necesario con API)

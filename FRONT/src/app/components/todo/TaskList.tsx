@@ -29,6 +29,7 @@ export const TaskList: React.FC = () => {
     deleteComment,
     setFilter,
     getTaskById,
+    canCompleteTask,
   } = useTodo();
 
   const { setError } = useGlobal();
@@ -268,7 +269,7 @@ export const TaskList: React.FC = () => {
                 onDelete={handleDeleteTask}
                 onAddSubtask={handleAddSubtask}
                 onAddComment={handleAddComment}
-                canComplete={true}
+                canComplete={canCompleteTask(task.id)}
                 hasActiveFilters={!!(filter.status || filter.search)}
               />
             ))}
