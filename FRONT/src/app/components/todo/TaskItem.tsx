@@ -166,8 +166,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           </Button>
         )}
 
-        {/* Agregar/Editar comentario - solo para tareas principales (level 0) */}
-        {level === 0 && task.comments.length <= 0 && (
+        {/* Comentarios - solo para tareas principales (level 0) */}
+        {level === 0 && (
           <Button
             size="xs"
             variant="secondary"
@@ -177,7 +177,11 @@ export const TaskItem: React.FC<TaskItemProps> = ({
             <span className="material-icons text-sm sm:text-base mr-1 sm:mr-2">
               comment
             </span>
-            <span>Agregar comentario</span>
+            <span>
+              {task.comments.length === 0
+                ? 'Agregar comentario'
+                : `Comentarios (${task.comments.length})`}
+            </span>
           </Button>
         )}
 

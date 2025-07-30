@@ -84,7 +84,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
     <div className="bg-white rounded-lg p-6 border border-gray-400 shadow-sm">
       <h3 className="text-xl font-semibold text-gray-800 mb-4">
         {parentId
-          ? `Agregar Subtarea a ${parentId}`
+          ? `Agregar Subtarea`
           : initialData
             ? 'Editar Tarea'
             : 'Nueva Tarea'}

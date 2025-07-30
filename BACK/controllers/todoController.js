@@ -212,10 +212,107 @@ const addComment = async (req, res, next) => {
   }
 };
 
+// @desc    Editar comentario de un TODO
+// @route   PUT /api/todos/:id/comments/:commentId
+// @access  Private
+const editComment = async (req, res, next) => {
+  try {
+    // Verificar errores de validación
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Datos de entrada inválidos',
+        errors: errors.array()
+      });
+    }
+
+    const { id, commentId } = req.params;
+    const { text } = req.body;
+
+    // Buscar TODO
+    const todo = await Todo.findOne({ _id: id, user: req.user.id });
+    
+    if (!todo) {
+      return res.status(404).json({
+        success: false,
+        message: 'TODO no encontrado'
+      });
+    }
+
+    // Buscar comentario
+    const comment = todo.comments.id(commentId);
+    
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Comentario no encontrado'
+      });
+    }
+
+    // Actualizar comentario
+    comment.text = text;
+    comment.updatedAt = new Date();
+
+    await todo.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Comentario actualizado exitosamente',
+      data: todo
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Eliminar comentario de un TODO
+// @route   DELETE /api/todos/:id/comments/:commentId
+// @access  Private
+const deleteComment = async (req, res, next) => {
+  try {
+    const { id, commentId } = req.params;
+
+    // Buscar TODO
+    const todo = await Todo.findOne({ _id: id, user: req.user.id });
+    
+    if (!todo) {
+      return res.status(404).json({
+        success: false,
+        message: 'TODO no encontrado'
+      });
+    }
+
+    // Buscar comentario
+    const comment = todo.comments.id(commentId);
+    
+    if (!comment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Comentario no encontrado'
+      });
+    }
+
+    // Eliminar comentario
+    todo.comments.pull(commentId);
+    await todo.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Comentario eliminado exitosamente',
+      data: todo
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createTodo,
   getTodos,
   updateTodo,
   deleteTodo,
-  addComment
+  addComment,
+  editComment,
+  deleteComment
 };

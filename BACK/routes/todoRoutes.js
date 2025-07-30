@@ -6,7 +6,9 @@ const {
   getTodos,
   updateTodo,
   deleteTodo,
-  addComment
+  addComment,
+  editComment,
+  deleteComment
 } = require('../controllers/todoController');
 const {
   createTodoValidator,
@@ -38,5 +40,15 @@ router.delete('/:id', protect, deleteTodo);
 // @desc    Agregar comentario a un TODO
 // @access  Private
 router.post('/:id/comments', protect, addCommentValidator, addComment);
+
+// @route   PUT /api/todos/:id/comments/:commentId
+// @desc    Editar comentario de un TODO
+// @access  Private
+router.put('/:id/comments/:commentId', protect, addCommentValidator, editComment);
+
+// @route   DELETE /api/todos/:id/comments/:commentId
+// @desc    Eliminar comentario de un TODO
+// @access  Private
+router.delete('/:id/comments/:commentId', protect, deleteComment);
 
 module.exports = router;

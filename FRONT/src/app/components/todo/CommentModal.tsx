@@ -107,32 +107,31 @@ export const CommentModal: React.FC<CommentModalProps> = ({
             </button>
           </div>
 
-          {comments.length === 0 && (
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Agrega tu comentario
-              </label>
-              <div className="flex gap-2">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Escribe tu comentario..."
-                  className="flex-1 p-3 rounded-md bg-white text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
-                  rows={3}
-                  disabled={isLoading}
-                />
-                <Button
-                  onClick={handleAddComment}
-                  disabled={!newComment.trim() || isLoading}
-                  className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 sm:px-4 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-start"
-                >
-                  <span className="material-icons text-sm sm:text-base">
-                    add
-                  </span>
-                </Button>
-              </div>
+          {/* Add new comment section - always visible */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {comments.length === 0
+                ? 'Agrega tu comentario'
+                : 'Agregar nuevo comentario'}
+            </label>
+            <div className="flex gap-2">
+              <textarea
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Escribe tu comentario..."
+                className="flex-1 p-3 rounded-md bg-white text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-vertical"
+                rows={3}
+                disabled={isLoading}
+              />
+              <Button
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || isLoading}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-3 sm:px-4 py-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-start"
+              >
+                <span className="material-icons text-sm sm:text-base">add</span>
+              </Button>
             </div>
-          )}
+          </div>
 
           {/* Comments list */}
           <div className="space-y-4 max-h-96 overflow-y-auto">
