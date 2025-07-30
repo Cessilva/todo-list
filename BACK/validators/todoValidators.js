@@ -53,8 +53,16 @@ const createTodoValidation = [
 
   body('parentId')
     .optional()
-    .isMongoId()
-    .withMessage('El parentId debe ser un ID de MongoDB válido')
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') {
+        return true; // Permitir null, undefined o string vacío para tareas principales
+      }
+      // Si tiene valor, debe ser un MongoId válido
+      if (!/^[0-9a-fA-F]{24}$/.test(value)) {
+        throw new Error('El parentId debe ser un ID de MongoDB válido');
+      }
+      return true;
+    })
 ];
 
 // Validaciones para actualizar todo
