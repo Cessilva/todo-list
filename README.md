@@ -1,102 +1,152 @@
-# Todo List - Next.js SPA
+# 📋 TODO-LIST - Aplicación Completa de Gestión de Tareas
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Una aplicación moderna de gestión de tareas construida con **Next.js 15** (frontend) y **Node.js + Express + MongoDB** (backend). Incluye autenticación JWT, sistema de roles, subtareas jerárquicas y funcionalidades avanzadas.
 
-## Prerequisites
+## 🚀 Inicio Rápido
 
-Before running this project, make sure you have the following installed on your system:
+### Prerrequisitos
 
-- **Node.js** (version 18.0 or higher) - [Download here](https://nodejs.org/)
-- **npm** (comes with Node.js) or **yarn** package manager
-- **Git** - [Download here](https://git-scm.com/)
+- **Node.js** (versión 18.0 o superior) - [Descargar aquí](https://nodejs.org/)
+- **npm** (viene con Node.js) o **yarn**
+- **Git** - [Descargar aquí](https://git-scm.com/)
+- **Make** (opcional, para usar comandos automatizados)
 
-## Installation
+### ⚙️ Configuración del Archivo .env
 
-1. **Clone the repository:**
+Antes de ejecutar la aplicación, debes crear un archivo `.env` en la carpeta `BACK/` con la siguiente configuración:
+
+```bash
+# Crear el archivo .env en la carpeta BACK
+cd BACK
+touch .env
+```
+
+**Contenido del archivo `BACK/.env`:**
+
+```env
+# MongoDB Configuration
+MONGODB_URI=mongodb+srv://ceciliaproteco:qwerty1234567@cluster0.5uuaeie.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+DB_NAME=todolist
+
+# Server Configuration
+PORT=5002
+NODE_ENV=development
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-for-todo-app-2025-very-long-and-secure
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_SECRET=your-super-secret-refresh-jwt-key-for-todo-app-2025-even-more-secure
+JWT_REFRESH_EXPIRES_IN=7d
+
+# CORS Configuration
+FRONTEND_URL=http://localhost:3000
+```
+
+> **⚠️ Importante:** Este archivo `.env` es necesario para que el backend pueda conectarse a la base de datos MongoDB y funcionar correctamente.
+
+### Instalación Automática con Makefile
+
+1. **Clonar el repositorio:**
    ```bash
-   git clone git@github.com:Cessilva/todo-list.git
+   git clone https://github.com/Cessilva/todo-list.git
    cd todo-list
    ```
 
-2. **Install dependencies:**
+2. **Setup completo automático:**
    ```bash
+   make setup
+   ```
+   Este comando:
+   - Verifica los requisitos del sistema
+   - Instala dependencias del backend y frontend
+   - Configura la base de datos con datos de prueba
+
+3. **Iniciar en modo desarrollo:**
+   ```bash
+   make dev
+   ```
+
+¡Listo! La aplicación estará disponible en:
+- **Frontend:** http://localhost:3000
+- **Backend:** http://localhost:5002
+
+### Instalación Manual
+
+Si prefieres no usar Make:
+
+1. **Instalar dependencias del backend:**
+   ```bash
+   cd BACK
    npm install
-   # or
-   yarn install
    ```
 
-3. **Set up Git hooks (for development):**
+2. **Instalar dependencias del frontend:**
    ```bash
-   npx husky install
+   cd FRONT
+   npm install
    ```
 
-## Getting Started
+3. **Configurar base de datos:**
+   ```bash
+   cd BACK
+   npm run reset-db
+   ```
 
-**Run the development server:**
+4. **Iniciar servicios:**
+   ```bash
+   # Terminal 1 - Backend
+   cd BACK
+   npm run dev
 
+   # Terminal 2 - Frontend
+   cd FRONT
+   npm run dev
+   ```
+
+## 🛠️ Comandos del Makefile
+
+### 📦 Instalación
 ```bash
-npm run dev
-# or
-yarn dev
+make install          # Instala dependencias del backend y frontend
+make install-backend  # Instala solo dependencias del backend
+make install-frontend # Instala solo dependencias del frontend
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-## Available Scripts
-
-- `npm run dev` - Starts the development server
-- `npm run build` - Builds the app for production
-- `npm run start` - Runs the built app in production mode
-- `npm run lint` - Runs ESLint to check for code issues
-- `npm run docs` - Generates TypeDoc documentation
-
-## Development Guidelines
-
-This project uses **commitlint** to enforce conventional commit messages. When making commits, please follow this format:
-
-```
-type(scope): description
-
-Examples:
-feat: add new todo functionality
-fix: resolve issue with todo deletion
-docs: update README instructions
+### 🚀 Desarrollo
+```bash
+make dev              # Ejecuta backend y frontend en modo desarrollo
+make dev-backend      # Ejecuta solo el backend en modo desarrollo
+make dev-frontend     # Ejecuta solo el frontend en modo desarrollo
 ```
 
-### Allowed commit types:
-- `feat` - New features
-- `fix` - Bug fixes
-- `docs` - Documentation changes
-- `style` - Code style changes (formatting, etc.)
-- `refactor` - Code refactoring
-- `test` - Adding or updating tests
-- `chore` - Maintenance tasks
-- `ci` - CI/CD changes
-- `perf` - Performance improvements
-- `build` - Build system changes
+### 🗄️ Base de Datos
+```bash
+make reset-db         # Limpia y carga datos de prueba en la BD
+make seed-db          # Carga datos de prueba en la BD
+make clean-db         # Limpia la base de datos
+```
 
+### 🧹 Limpieza y Utilidades
+```bash
+make clean            # Limpia node_modules y archivos de build
+make stop             # Detiene todos los procesos en desarrollo
+make help             # Muestra ayuda con todos los comandos
+make info             # Muestra información del proyecto
+```
 
-## Technologies Used
+### 🔧 Setup Inicial Completo
+```bash
+make setup            # Verifica requisitos, instala dependencias y configura BD
+```
 
-- **Next.js 15** - React framework
-- **React 18** - UI library
-- **TypeScript** - Type safety
-- **Tailwind CSS** - Styling
-- **ESLint** - Code linting
-- **Prettier** - Code formatting
-- **Husky** - Git hooks
-- **Commitlint** - Commit message linting
-- **TypeDoc** - Documentation generation
+## 👤 Usuarios de Prueba
 
-## License
+El sistema incluye usuarios predefinidos para testing:
 
-This project is open source and available under the [MIT License](LICENSE).
+- **Administrador:** 
+  - Email: `admin@todolist.com`
+  - Contraseña: `password123`
 
-## Available users and passwords
-- admin@todolist.com (Administrador)
-- user@todolist.com (Usuario)
-         
-Password for both: password123
-      
+- **Usuario Regular:**
+  - Email: `user@todolist.com`
+  - Contraseña: `password123`
