@@ -15,7 +15,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
 
   useEffect(() => {
     if (state.isInitialized && !state.isAuthenticated) {
-      router.push('/auth');
+      router.push('/pages/auth');
     }
   }, [state.isInitialized, state.isAuthenticated, router]);
 

@@ -7,10 +7,9 @@ import { useAuth } from '../../context/AuthContext';
 import { LoginCredentials } from '../../types/auth';
 import Image from 'next/image';
 import { RegisterForm } from '../../components/login/RegisterForm';
-import { ForgotPasswordForm } from '../../components/login/ForgotPasswordForm';
 import Button from '../../components/Button';
 
-type AuthView = 'login' | 'register' | 'forgot-password';
+type AuthView = 'login' | 'register';
 
 export default function Auth() {
   const router = useRouter();
@@ -85,22 +84,13 @@ export default function Auth() {
             </p>
           )}
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-row  justify-between">
           <Button
             type="submit"
             className="bg-primary-50 text-primary-500 font-medium py-2 px-6 rounded hover:bg-secondary-100 transition-colors"
           >
-            Acceso
+            Ingresa
           </Button>
-          <Button
-            variant="link"
-            onClick={() => setCurrentView('forgot-password')}
-            className="text-secondary-200 text-sm hover:text-primary-50"
-          >
-            ¿Olvidaste tu contraseña?
-          </Button>
-        </div>
-        <div className="mt-4 text-center">
           <Button
             variant="link"
             onClick={() => setCurrentView('register')}
@@ -130,10 +120,6 @@ export default function Auth() {
     switch (currentView) {
       case 'register':
         return <RegisterForm onSwitchToLogin={() => setCurrentView('login')} />;
-      case 'forgot-password':
-        return (
-          <ForgotPasswordForm onSwitchToLogin={() => setCurrentView('login')} />
-        );
       default:
         return renderLoginForm();
     }

@@ -5,22 +5,37 @@ import {
   AuthResponse,
 } from '../types/auth';
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5002/api';
+
 const STORAGE_KEYS = {
+  ACCESS_TOKEN: 'todo_app_access_token',
+  REFRESH_TOKEN: 'todo_app_refresh_token',
   USER: 'todo_app_user',
-  USERS: 'todo_app_users',
 } as const;
 
-// Simulación de base de datos de usuarios en localStorage
+// Servicio de autenticación que se conecta con la API del backend
 class AuthService {
-  // Obtener todos los usuarios registrados
-  private getUsers(): User[] {
-    const users = localStorage.getItem(STORAGE_KEYS.USERS);
-    return users ? JSON.parse(users) : [];
+  // Obtener token de acceso
+  getAccessToken(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
   }
 
-  // Guardar usuarios en localStorage
-  private saveUsers(users: User[]): void {
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+  // Obtener token de refresh
+  getRefreshToken(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+  }
+
+  // Guardar tokens
+  private saveTokens(accessToken: string, refreshToken: string): void {
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+    localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refreshToken);
+  }
+
+  // Eliminar tokens
+  private removeTokens(): void {
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
   }
 
   // Obtener usuario actual
@@ -39,178 +54,345 @@ class AuthService {
     localStorage.removeItem(STORAGE_KEYS.USER);
   }
 
-  // Generar ID único
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+  // Realizar petición HTTP con manejo de errores
+  private async makeRequest(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<any> {
+    try {
+      const response = await fetch(`${API_BASE_URL}${url}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Error en la petición');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error en petición:', error);
+      throw error;
+    }
   }
 
-  // Simular delay de red
-  private async simulateNetworkDelay(): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, 1000));
+  // Realizar petición autenticada con manejo automático de tokens
+  private async makeAuthenticatedRequest(
+    url: string,
+    options: RequestInit = {}
+  ): Promise<any> {
+    const token = this.getAccessToken();
+
+    if (!token) {
+      throw new Error('No hay token de acceso');
+    }
+
+    try {
+      return await this.makeRequest(url, {
+        ...options,
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+    } catch (error: any) {
+      // Si el token expiró, intentar renovarlo
+      if (
+        error.message?.includes('Token expirado') ||
+        error.message?.includes('jwt expired')
+      ) {
+        try {
+          await this.refreshAccessToken();
+          const newToken = this.getAccessToken();
+
+          if (newToken) {
+            return await this.makeRequest(url, {
+              ...options,
+              headers: {
+                ...options.headers,
+                Authorization: `Bearer ${newToken}`,
+              },
+            });
+          }
+        } catch (refreshError) {
+          // Si no se puede renovar, limpiar sesión
+          this.removeTokens();
+          this.removeCurrentUser();
+          throw new Error('Sesión expirada');
+        }
+      }
+      throw error;
+    }
+  }
+
+  // Renovar token de acceso
+  private async refreshAccessToken(): Promise<void> {
+    const refreshToken = this.getRefreshToken();
+
+    if (!refreshToken) {
+      throw new Error('No hay token de refresh');
+    }
+
+    try {
+      const response = await this.makeRequest('/auth/refresh', {
+        method: 'POST',
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (response.success) {
+        const { accessToken, refreshToken: newRefreshToken } =
+          response.data.tokens;
+        this.saveTokens(accessToken, newRefreshToken);
+      } else {
+        throw new Error('No se pudo renovar el token');
+      }
+    } catch (error) {
+      throw new Error('Error al renovar token');
+    }
   }
 
   // Login
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    await this.simulateNetworkDelay();
+    try {
+      const response = await this.makeRequest('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
 
-    // Limpiar storage y setear usuarios correctos cada vez que alguien se loggue
-    const correctUsers: User[] = [
-      {
-        id: '1',
-        email: 'admin@todolist.com',
-        name: 'Cecilia Silva Sandoval',
-        role: 'admin',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        id: '2',
-        email: 'user@todolist.com',
-        name: 'Pedro Páramo',
-        role: 'user',
-        createdAt: new Date().toISOString(),
-      },
-    ];
-    this.clearAndSetUsers(correctUsers);
+      if (response.success) {
+        const { user, tokens } = response.data;
 
-    const users = this.getUsers();
-    const user = users.find((u) => u.email === credentials.email);
+        // Guardar tokens y usuario
+        this.saveTokens(tokens.accessToken, tokens.refreshToken);
+        this.saveCurrentUser({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: 'user' as const, // Por defecto, ya que el backend no maneja roles aún
+          createdAt: user.createdAt,
+        });
 
-    if (!user) {
+        return {
+          success: true,
+          message: response.message,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: 'user' as const,
+            createdAt: user.createdAt,
+          },
+        };
+      }
+
       return {
         success: false,
-        message: 'Usuario no encontrado',
+        message: response.message,
       };
-    }
-
-    // En una aplicación real, aquí verificarías la contraseña hasheada
-    // Por simplicidad, usamos una verificación básica
-    if (credentials.password !== 'password123') {
+    } catch (error: any) {
       return {
         success: false,
-        message: 'Contraseña incorrecta',
+        message: error.message || 'Error al iniciar sesión',
       };
     }
-
-    this.saveCurrentUser(user);
-    return {
-      success: true,
-      message: 'Inicio de sesión exitoso',
-      user,
-    };
   }
 
   // Register
   async register(credentials: RegisterCredentials): Promise<AuthResponse> {
-    await this.simulateNetworkDelay();
+    try {
+      const response = await this.makeRequest('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(credentials),
+      });
 
-    const users = this.getUsers();
+      if (response.success) {
+        const { user, tokens } = response.data;
 
-    // Verificar si el usuario ya existe
-    const existingUser = users.find((u) => u.email === credentials.email);
-    if (existingUser) {
+        // Guardar tokens y usuario
+        this.saveTokens(tokens.accessToken, tokens.refreshToken);
+        this.saveCurrentUser({
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: 'user' as const,
+          createdAt: user.createdAt,
+        });
+
+        return {
+          success: true,
+          message: response.message,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: 'user' as const,
+            createdAt: user.createdAt,
+          },
+        };
+      }
+
       return {
         success: false,
-        message: 'El usuario ya existe',
+        message: response.message,
       };
-    }
-
-    // Validar contraseñas
-    if (credentials.password !== credentials.confirmPassword) {
+    } catch (error: any) {
       return {
         success: false,
-        message: 'Las contraseñas no coinciden',
+        message: error.message || 'Error al registrar usuario',
       };
     }
-
-    if (credentials.password.length < 6) {
-      return {
-        success: false,
-        message: 'La contraseña debe tener al menos 6 caracteres',
-      };
-    }
-
-    // Crear nuevo usuario
-    const newUser: User = {
-      id: this.generateId(),
-      email: credentials.email,
-      name: credentials.name,
-      role: 'user',
-      createdAt: new Date().toISOString(),
-    };
-
-    users.push(newUser);
-    this.saveUsers(users);
-    this.saveCurrentUser(newUser);
-
-    return {
-      success: true,
-      message: 'Registro exitoso',
-      user: newUser,
-    };
-  }
-
-  // Reset password
-  async resetPassword(email: string): Promise<AuthResponse> {
-    await this.simulateNetworkDelay();
-
-    const users = this.getUsers();
-    const user = users.find((u) => u.email === email);
-
-    if (!user) {
-      return {
-        success: false,
-        message: 'Usuario no encontrado',
-      };
-    }
-
-    // En una aplicación real, aquí enviarías un email
-    return {
-      success: true,
-      message:
-        'Se ha enviado un enlace de recuperación a tu correo electrónico',
-    };
   }
 
   // Logout
   async logout(): Promise<void> {
-    await this.simulateNetworkDelay();
-    this.removeCurrentUser();
+    try {
+      // Intentar hacer logout en el servidor
+      const token = this.getAccessToken();
+      if (token) {
+        await this.makeAuthenticatedRequest('/auth/logout', {
+          method: 'POST',
+        });
+      }
+    } catch (error) {
+      console.error('Error al hacer logout en el servidor:', error);
+    } finally {
+      // Limpiar datos locales siempre
+      this.removeTokens();
+      this.removeCurrentUser();
+    }
   }
 
   // Verificar si el usuario está autenticado
   isAuthenticated(): boolean {
-    return this.getCurrentUser() !== null;
+    const token = this.getAccessToken();
+    const user = this.getCurrentUser();
+    return !!(token && user);
   }
 
-  // Inicializar usuarios de prueba
-  initializeTestUsers(): void {
-    const users = this.getUsers();
-    if (users.length === 0) {
-      const testUsers: User[] = [
-        {
-          id: '1',
-          email: 'admin@todolist.com',
-          name: 'Cecilia Silva Sandoval',
-          role: 'admin',
-          createdAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          email: 'user@todolist.com',
-          name: 'Pedro Páramo',
-          role: 'user',
-          createdAt: new Date().toISOString(),
-        },
-      ];
-      this.saveUsers(testUsers);
+  // Verificar token con el servidor
+  async verifyToken(): Promise<boolean> {
+    try {
+      const response = await this.makeAuthenticatedRequest('/auth/verify');
+      return response.success;
+    } catch (error) {
+      console.error('Error al verificar token:', error);
+      // Si el token no es válido, limpiar datos locales
+      this.removeTokens();
+      this.removeCurrentUser();
+      return false;
     }
   }
 
-  // Limpiar storage y setear usuarios correctos
-  clearAndSetUsers(users: User[]): void {
-    localStorage.removeItem(STORAGE_KEYS.USERS);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    this.saveUsers(users);
+  // Obtener perfil del usuario
+  async getProfile(): Promise<User | null> {
+    try {
+      const response = await this.makeAuthenticatedRequest('/auth/profile');
+
+      if (response.success) {
+        const user = {
+          id: response.data.user.id,
+          email: response.data.user.email,
+          name: response.data.user.name,
+          role: 'user' as const,
+          createdAt: response.data.user.createdAt,
+        };
+
+        this.saveCurrentUser(user);
+        return user;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error al obtener perfil:', error);
+      return null;
+    }
+  }
+
+  // Actualizar perfil
+  async updateProfile(data: {
+    name?: string;
+    email?: string;
+  }): Promise<AuthResponse> {
+    try {
+      const response = await this.makeAuthenticatedRequest('/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+
+      if (response.success) {
+        const user = {
+          id: response.data.user.id,
+          email: response.data.user.email,
+          name: response.data.user.name,
+          role: 'user' as const,
+          createdAt: response.data.user.createdAt,
+        };
+
+        this.saveCurrentUser(user);
+
+        return {
+          success: true,
+          message: response.message,
+          user,
+        };
+      }
+
+      return {
+        success: false,
+        message: response.message,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Error al actualizar perfil',
+      };
+    }
+  }
+
+  // Cambiar contraseña
+  async changePassword(
+    currentPassword: string,
+    newPassword: string
+  ): Promise<AuthResponse> {
+    try {
+      const response = await this.makeAuthenticatedRequest(
+        '/auth/change-password',
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            currentPassword,
+            newPassword,
+            confirmNewPassword: newPassword,
+          }),
+        }
+      );
+
+      return {
+        success: response.success,
+        message: response.message,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Error al cambiar contraseña',
+      };
+    }
+  }
+
+  // Métodos de compatibilidad con el código existente
+  initializeTestUsers(): void {
+    // Ya no necesitamos inicializar usuarios de prueba
+    console.log('Usando API real, no se necesitan usuarios de prueba');
+  }
+
+  clearAndSetUsers(): void {
+    // Ya no necesitamos este método
+    console.log('Usando API real, no se necesita limpiar usuarios locales');
   }
 }
 

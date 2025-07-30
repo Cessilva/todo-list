@@ -18,10 +18,6 @@ export interface RegisterCredentials {
   confirmPassword: string;
 }
 
-export interface ResetPasswordData {
-  email: string;
-}
-
 export interface AuthResponse {
   success: boolean;
   message: string;

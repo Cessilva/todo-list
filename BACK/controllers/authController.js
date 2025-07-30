@@ -70,6 +70,7 @@ const login = async (req, res, next) => {
     // Verificar errores de validación
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Errores de validación:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Datos de entrada inválidos',
@@ -81,6 +82,7 @@ const login = async (req, res, next) => {
 
     // Verificar si el usuario existe y obtener la contraseña
     const user = await User.findOne({ email }).select('+password');
+    
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -98,6 +100,7 @@ const login = async (req, res, next) => {
 
     // Verificar contraseña
     const isPasswordValid = await user.comparePassword(password);
+    
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -128,6 +131,7 @@ const login = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.log('❌ Error en login:', error);
     next(error);
   }
 };
@@ -336,6 +340,59 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
+// @desc    Renovar token de acceso
+// @route   POST /api/auth/refresh
+// @access  Public
+const refreshToken = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token de refresh requerido'
+      });
+    }
+
+    // Verificar el refresh token
+    const jwt = require('jsonwebtoken');
+    try {
+      const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+      
+      // Verificar que el usuario existe y está activo
+      const user = await User.findById(decoded.id);
+      if (!user || !user.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: 'Usuario no válido'
+        });
+      }
+
+      // Generar nuevos tokens
+      const newAccessToken = generateAccessToken(user._id);
+      const newRefreshToken = generateRefreshToken(user._id);
+
+      res.status(200).json({
+        success: true,
+        message: 'Tokens renovados exitosamente',
+        data: {
+          tokens: {
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken
+          }
+        }
+      });
+    } catch (jwtError) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token de refresh inválido o expirado'
+      });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -343,5 +400,6 @@ module.exports = {
   updateProfile,
   changePassword,
   logout,
-  verifyToken
+  verifyToken,
+  refreshToken
 };

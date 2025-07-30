@@ -7,12 +7,8 @@ import React, {
   useEffect,
   ReactNode,
 } from 'react';
-import {
-  User,
-  LoginCredentials,
-  RegisterCredentials,
-  ResetPasswordData,
-} from '../types/auth';
+import { useRouter } from 'next/navigation';
+import { User, LoginCredentials, RegisterCredentials } from '../types/auth';
 import { authService } from '../services/authService';
 import { useGlobal } from './GlobalContext';
 
@@ -26,7 +22,6 @@ interface AuthContextType {
   state: AuthState;
   login: (credentials: LoginCredentials) => Promise<boolean>;
   register: (credentials: RegisterCredentials) => Promise<boolean>;
-  resetPassword: (data: ResetPasswordData) => Promise<boolean>;
   logout: () => Promise<void>;
 }
 
@@ -64,38 +59,36 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
-  const { setLoading, setError } = useGlobal();
+  const { setLoading, setError, setSuccess } = useGlobal();
 
   // Inicializar autenticación al cargar la aplicación
   useEffect(() => {
-    const initializeAuth = () => {
+    const initializeAuth = async () => {
       try {
-        // Setear usuarios correctos desde el inicio
-        const correctUsers: User[] = [
-          {
-            id: '1',
-            email: 'admin@todolist.com',
-            name: 'Cecilia Silva Sandoval',
-            role: 'admin',
-            createdAt: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            email: 'user@todolist.com',
-            name: 'Pedro Páramo',
-            role: 'user',
-            createdAt: new Date().toISOString(),
-          },
-        ];
-
-        // Limpiar storage y setear usuarios correctos
-        authService.clearAndSetUsers(correctUsers);
-
-        // Verificar si hay un usuario logueado
+        // Verificar si hay un usuario logueado y si el token es válido
         const currentUser = authService.getCurrentUser();
-        dispatch({ type: 'SET_USER', payload: currentUser });
+
+        if (currentUser && authService.isAuthenticated()) {
+          // Verificar token con el servidor
+          const isValidToken = await authService.verifyToken();
+
+          if (isValidToken) {
+            // Token válido, mantener sesión
+            dispatch({ type: 'SET_USER', payload: currentUser });
+          } else {
+            // Token inválido, limpiar sesión
+            await authService.logout();
+            dispatch({ type: 'SET_USER', payload: null });
+          }
+        } else {
+          // No hay usuario logueado
+          dispatch({ type: 'SET_USER', payload: null });
+        }
       } catch (error) {
         console.error('Error initializing auth:', error);
+        // En caso de error, limpiar sesión por seguridad
+        await authService.logout();
+        dispatch({ type: 'SET_USER', payload: null });
       } finally {
         dispatch({ type: 'SET_INITIALIZED', payload: true });
       }
@@ -140,11 +133,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
       const response = await authService.register(credentials);
 
       if (response.success && response.user) {
-        dispatch({ type: 'SET_USER', payload: response.user });
-        setError({
-          type: 'info',
+        // No mantener al usuario logueado después del registro
+        // Limpiar cualquier token que se haya guardado automáticamente
+        await authService.logout();
+        dispatch({ type: 'SET_USER', payload: null });
+
+        setSuccess({
           title: 'Registro exitoso',
-          message: response.message,
+          message:
+            'Tu cuenta ha sido creada exitosamente. Ahora puedes iniciar sesión.',
         });
         return true;
       } else {
@@ -167,54 +164,35 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const resetPassword = async (data: ResetPasswordData): Promise<boolean> => {
-    try {
-      setLoading(true);
-      const response = await authService.resetPassword(data.email);
-
-      if (response.success) {
-        setError({
-          type: 'info',
-          title: 'Recuperación de contraseña',
-          message: response.message,
-        });
-        return true;
-      } else {
-        setError({
-          type: 'error',
-          title: 'Error en la recuperación',
-          message: response.message,
-        });
-        return false;
-      }
-    } catch (error) {
-      setError({
-        type: 'error',
-        title: 'Error de conexión',
-        message: 'No se pudo conectar con el servidor',
-      });
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const logout = async (): Promise<void> => {
     try {
       setLoading(true);
       await authService.logout();
       dispatch({ type: 'SET_USER', payload: null });
+
+      // Mostrar mensaje de éxito
+      setError({
+        type: 'info',
+        title: 'Sesión cerrada',
+        message: 'Has cerrado sesión exitosamente',
+      });
     } catch (error) {
       console.error('Error during logout:', error);
+      // Aún así limpiar la sesión local
+      dispatch({ type: 'SET_USER', payload: null });
+
+      setError({
+        type: 'warning',
+        title: 'Sesión cerrada',
+        message: 'Sesión cerrada localmente (error de conexión con servidor)',
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AuthContext.Provider
-      value={{ state, login, register, resetPassword, logout }}
-    >
+    <AuthContext.Provider value={{ state, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

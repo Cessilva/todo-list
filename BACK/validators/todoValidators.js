@@ -122,7 +122,7 @@ const addCommentValidation = [
 ];
 
 module.exports = {
-  createTodoValidation,
-  updateTodoValidation,
-  addCommentValidation
+  createTodoValidator: createTodoValidation,
+  updateTodoValidator: updateTodoValidation,
+  addCommentValidator: addCommentValidation
 };

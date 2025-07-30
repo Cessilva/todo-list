@@ -6,6 +6,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 // Importar rutas
 const authRoutes = require('./routes/authRoutes');
+const todoRoutes = require('./routes/todoRoutes');
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.get('/', (req, res) => {
 
 // Rutas de la API
 app.use('/api/auth', authRoutes);
+app.use('/api/todos', todoRoutes);
 
 // Middleware para rutas no encontradas
 app.all('*', (req, res) => {

@@ -9,11 +9,12 @@ const {
   updateProfile,
   changePassword,
   logout,
-  verifyToken
+  verifyToken,
+  refreshToken
 } = require('../controllers/authController');
 
 // Importar middleware de autenticación
-const auth = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 // Importar validaciones
 const {
@@ -36,26 +37,31 @@ router.post('/login', loginValidation, login);
 // @route   GET /api/auth/profile
 // @desc    Obtener perfil del usuario autenticado
 // @access  Private
-router.get('/profile', auth, getProfile);
+router.get('/profile', protect, getProfile);
 
 // @route   PUT /api/auth/profile
 // @desc    Actualizar perfil del usuario
 // @access  Private
-router.put('/profile', auth, updateProfileValidation, updateProfile);
+router.put('/profile', protect, updateProfileValidation, updateProfile);
 
 // @route   PUT /api/auth/change-password
 // @desc    Cambiar contraseña del usuario
 // @access  Private
-router.put('/change-password', auth, changePasswordValidation, changePassword);
+router.put('/change-password', protect, changePasswordValidation, changePassword);
 
 // @route   POST /api/auth/logout
 // @desc    Cerrar sesión
 // @access  Private
-router.post('/logout', auth, logout);
+router.post('/logout', protect, logout);
 
 // @route   GET /api/auth/verify
 // @desc    Verificar token de autenticación
 // @access  Private
-router.get('/verify', auth, verifyToken);
+router.get('/verify', protect, verifyToken);
+
+// @route   POST /api/auth/refresh
+// @desc    Renovar token de acceso
+// @access  Public
+router.post('/refresh', refreshToken);
 
 module.exports = router;

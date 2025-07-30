@@ -5,6 +5,9 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
+    "clean-db": "node scripts/cleanDatabase.js",
+    "seed-db": "node scripts/seedDatabase.js",
+    "reset-db": "npm run clean-db && npm run seed-db",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

@@ -2,7 +2,9 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
+import { useGlobal } from '../../context/GlobalContext';
 import { RegisterCredentials } from '../../types/auth';
 import Button from '../Button';
 
@@ -13,7 +15,9 @@ interface RegisterFormProps {
 export const RegisterForm: React.FC<RegisterFormProps> = ({
   onSwitchToLogin,
 }) => {
+  const router = useRouter();
   const { register: registerUser } = useAuth();
+  const { state } = useGlobal();
 
   const {
     register,
@@ -27,7 +31,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const onSubmit = async (data: RegisterCredentials) => {
     const success = await registerUser(data);
     if (success) {
-      // El contexto manejará la redirección
+      onSwitchToLogin();
     }
   };
 
@@ -50,6 +54,18 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             }`}
             {...register('name', {
               required: 'El nombre es requerido',
+              minLength: {
+                value: 2,
+                message: 'El nombre debe tener al menos 2 caracteres',
+              },
+              maxLength: {
+                value: 50,
+                message: 'El nombre no puede exceder 50 caracteres',
+              },
+              pattern: {
+                value: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,
+                message: 'El nombre solo puede contener letras y espacios',
+              },
             })}
           />
           {errors.name && (
@@ -66,9 +82,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             }`}
             {...register('email', {
               required: 'El correo electrónico es requerido',
+              maxLength: {
+                value: 100,
+                message: 'El email no puede exceder 100 caracteres',
+              },
               pattern: {
-                value: /\S+@\S+\.\S+/,
-                message: 'El correo electrónico no es válido',
+                value: /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+                message: 'Debe ser un email válido',
               },
             })}
           />
@@ -89,6 +109,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
               minLength: {
                 value: 6,
                 message: 'La contraseña debe tener al menos 6 caracteres',
+              },
+              maxLength: {
+                value: 128,
+                message: 'La contraseña no puede exceder 128 caracteres',
+              },
+              pattern: {
+                value: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                message:
+                  'La contraseña debe contener al menos una letra minúscula, una mayúscula y un número',
               },
             })}
           />
@@ -119,12 +148,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           )}
         </div>
 
-        <div className="flex items-center  pt-4">
+        <div className="text-blue-100 text-sm mt-1">
+          La contraseña debe tener al menos 6 caracteres e incluir: una
+          minúscula, una mayúscula y un número
+        </div>
+
+        <div className="flex justify-center  pt-4">
           <Button
             type="submit"
             className="bg-primary-50 text-primary-500 font-medium py-2 px-6 rounded hover:bg-secondary-100 transition-colors"
           >
-            Registrarse
+            Registrate
           </Button>
         </div>
         <div className="flex justify-center pt-2">
