@@ -65,7 +65,6 @@ export const ProfileDropdown = () => {
       >
         <PerfilView
           perfilName={user.name}
-          description={user.role === 'admin' ? 'Administrador' : 'Usuario'}
           rol={user.role === 'admin' ? 'Administrador' : 'Usuario'}
           alt="Perfil de usuario"
           src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
@@ -80,9 +79,6 @@ export const ProfileDropdown = () => {
             <div className="sm:hidden px-4 py-2 border-b border-gray-700 ">
               <PerfilView
                 perfilName={user.name}
-                description={
-                  user.role === 'admin' ? 'Administrador' : 'Usuario'
-                }
                 rol={user.role === 'admin' ? 'Administrador' : 'Usuario'}
                 alt="Perfil de usuario"
                 src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"

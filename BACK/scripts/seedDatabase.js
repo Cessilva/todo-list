@@ -36,12 +36,14 @@ const seedDatabase = async () => {
       {
         name: 'Cecilia Silva Sandoval',
         email: 'admin@todolist.com',
-        password: 'password123'
+        password: 'password123',
+        role: 'admin'
       },
       {
         name: 'Pedro Páramo',
         email: 'user@todolist.com',
-        password: 'password123'
+        password: 'password123',
+        role: 'user'
       }
     ];
 
@@ -113,7 +115,7 @@ const seedDatabase = async () => {
     console.log('\n📊 Resumen de datos creados:');
     console.log('👥 Usuarios:');
     createdUsers.forEach((user, index) => {
-      console.log(`  ${index + 1}. ${user.name} (${user.email})`);
+      console.log(`  ${index + 1}. ${user.name} (${user.email}) - Rol: ${user.role}`);
     });
     
     console.log('\n📝 TODOs por usuario:');

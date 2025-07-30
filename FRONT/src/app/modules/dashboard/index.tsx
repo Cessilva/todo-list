@@ -28,9 +28,11 @@ export default function Dashboard() {
       <main className="min-h-screen h-full flex justify-center  p-4 sm:p-6 lg:p-8">
         <div className="w-full md:w-[90%] lg:w-[80%] xl:w-[60%] bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
           <div className="mb-8 flex flex-col">
-            <h2 className="text-2xl font-bold text-gray-800">
-              ¡Bienvenido, {state.user?.name}!
-            </h2>
+            <div className="flex items-center gap-3 mb-2">
+              <h2 className="text-2xl font-bold text-gray-800">
+                ¡Bienvenido, {state.user?.name}!
+              </h2>
+            </div>
             <p className="text-gray-600">
               Gestiona tus tareas de manera eficiente con nuestra aplicación.
             </p>

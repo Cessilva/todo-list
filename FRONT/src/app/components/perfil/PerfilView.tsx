@@ -22,7 +22,6 @@ export const PerfilView = ({
   alt,
   src,
   perfilName,
-  description,
   rol,
 }: PerfilViewProps): JSX.Element => {
   return (
@@ -38,12 +37,7 @@ export const PerfilView = ({
         <h2 className="text-xl font-semibold tracking-tight text-primary-50">
           {perfilName}
         </h2>
-        <p className="text-sm font-bold text-secondary-200 uppercase">
-          {description}
-        </p>
-        <p className="text-xs font-semibold text-secondary-200 uppercase">
-          {rol}
-        </p>
+        <p className="text-sm font-bold text-secondary-200 uppercase">{rol}</p>
       </div>
     </div>
   );

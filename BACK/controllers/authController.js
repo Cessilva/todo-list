@@ -49,6 +49,7 @@ const register = async (req, res, next) => {
           email: user.email,
           avatar: user.avatar,
           isActive: user.isActive,
+          role: user.role,
           createdAt: user.createdAt
         },
         tokens: {
@@ -122,6 +123,7 @@ const login = async (req, res, next) => {
           email: user.email,
           avatar: user.avatar,
           isActive: user.isActive,
+          role: user.role,
           createdAt: user.createdAt
         },
         tokens: {
@@ -160,6 +162,7 @@ const getProfile = async (req, res, next) => {
           email: user.email,
           avatar: user.avatar,
           isActive: user.isActive,
+          role: user.role,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt
         }
@@ -232,6 +235,7 @@ const updateProfile = async (req, res, next) => {
           email: user.email,
           avatar: user.avatar,
           isActive: user.isActive,
+          role: user.role,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt
         }
@@ -331,7 +335,8 @@ const verifyToken = async (req, res, next) => {
           name: req.user.name,
           email: req.user.email,
           avatar: req.user.avatar,
-          isActive: req.user.isActive
+          isActive: req.user.isActive,
+          role: req.user.role
         }
       }
     });

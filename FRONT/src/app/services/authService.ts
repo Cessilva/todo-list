@@ -173,7 +173,7 @@ class AuthService {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: 'user' as const, // Por defecto, ya que el backend no maneja roles aún
+          role: user.role,
           createdAt: user.createdAt,
         });
 
@@ -184,7 +184,7 @@ class AuthService {
             id: user.id,
             email: user.email,
             name: user.name,
-            role: 'user' as const,
+            role: user.role,
             createdAt: user.createdAt,
           },
         };
@@ -219,7 +219,7 @@ class AuthService {
           id: user.id,
           email: user.email,
           name: user.name,
-          role: 'user' as const,
+          role: user.role,
           createdAt: user.createdAt,
         });
 
@@ -230,7 +230,7 @@ class AuthService {
             id: user.id,
             email: user.email,
             name: user.name,
-            role: 'user' as const,
+            role: user.role,
             createdAt: user.createdAt,
           },
         };
@@ -298,7 +298,7 @@ class AuthService {
           id: response.data.user.id,
           email: response.data.user.email,
           name: response.data.user.name,
-          role: 'user' as const,
+          role: response.data.user.role,
           createdAt: response.data.user.createdAt,
         };
 
@@ -329,7 +329,7 @@ class AuthService {
           id: response.data.user.id,
           email: response.data.user.email,
           name: response.data.user.name,
-          role: 'user' as const,
+          role: response.data.user.role,
           createdAt: response.data.user.createdAt,
         };
 
